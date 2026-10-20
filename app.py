@@ -162,10 +162,10 @@ def check_in_background(force: bool = False) -> None:
 def poll_loop() -> None:
     check_in_background()
     while True:
-        delay = RETRY_INTERVAL if state().get("last_error") else CHECK_INTERVAL
-        time.sleep(delay)
         while _worker_thread and _worker_thread.is_alive():
             time.sleep(5)
+        delay = RETRY_INTERVAL if state().get("last_error") else CHECK_INTERVAL
+        time.sleep(delay)
         check_in_background()
 
 
