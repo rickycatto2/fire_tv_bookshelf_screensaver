@@ -1,12 +1,13 @@
-"""Create the README hero image and animated GIF without external image APIs.
+"""Create the README hero image and animated GIF.
 
-The demo shelf uses invented books so the public repository never contains the
-owner's actual reading history. Everything is drawn locally with Pillow.
+By default this draws a fictional demo shelf so forks can build the README
+without a personal library. Pass --poster to use a real generated poster:
 
-    python tools/make_demo_assets.py
+    python tools/make_demo_assets.py --poster output/current.jpg
 """
 from __future__ import annotations
 
+import argparse
 import math
 from pathlib import Path
 
@@ -361,8 +362,8 @@ def make_hero(poster: Image.Image, room: Image.Image,
         frame.paste(crop, (screen_x, screen_y), mask)
         frames.append(frame)
 
-    frames[steps // 2].save(DOCS / "hero.jpg", "JPEG", quality=90, optimize=True,
-                            progressive=True)
+    frames[0].save(DOCS / "hero.jpg", "JPEG", quality=90, optimize=True,
+                   progressive=True)
     gif_frames = [frame.resize((960, 540), Image.Resampling.LANCZOS) for frame in frames]
     hero_path = DOCS / "hero.gif"
     gif_frames[0].save(hero_path, save_all=True, append_images=gif_frames[1:], duration=220,
@@ -370,8 +371,32 @@ def make_hero(poster: Image.Image, room: Image.Image,
     print(f"Wrote {hero_path} ({hero_path.stat().st_size // 1024} KiB)")
 
 
+def load_poster(path: Path) -> Image.Image:
+    image = Image.open(path).convert("RGB")
+    if image.size != (WIDTH, HEIGHT):
+        # The service always writes this size; accept close variants for forks.
+        ratio = WIDTH / HEIGHT
+        source_ratio = image.width / image.height
+        if abs(source_ratio - ratio) > 0.005:
+            if source_ratio > ratio:
+                new_width = int(round(image.height * ratio))
+                left = (image.width - new_width) // 2
+                image = image.crop((left, 0, left + new_width, image.height))
+            else:
+                new_height = int(round(image.width / ratio))
+                top = (image.height - new_height) // 2
+                image = image.crop((0, top, image.width, top + new_height))
+        image = image.resize((WIDTH, HEIGHT), Image.Resampling.LANCZOS)
+    print(f"Using real poster {path} ({image.size[0]}x{image.size[1]})")
+    return image
+
+
 def main() -> None:
-    poster = render_poster()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--poster", type=Path, default=None,
+                        help="Use a real generated 21:9 poster instead of the demo shelf")
+    args = parser.parse_args()
+    poster = load_poster(args.poster) if args.poster else render_poster()
     room, screen = make_room()
     make_hero(poster, room, screen)
 
