@@ -79,6 +79,21 @@ def abs_json(path: str) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
+def abs_post_json(path: str, payload: dict) -> dict:
+    request = Request(
+        ABS_URL + path,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {ABS_KEY}",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urlopen(request, timeout=45) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
 def abs_bytes(path: str) -> tuple[bytes, str]:
     request = Request(
         ABS_URL + path,
@@ -510,18 +525,14 @@ def load_books() -> tuple[list[dict], dict]:
     progress = abs_json("/api/me").get("mediaProgress") or []
     in_progress = abs_json("/api/me/items-in-progress").get("libraryItems") or []
 
-    current = None
+    current_id = None
     if in_progress:
-        current = in_progress[0]
+        current_id = in_progress[0].get("id")
     else:
         candidates = [p for p in progress if not p.get("isFinished") and (p.get("progress") or 0) > 0]
         if candidates:
             candidates.sort(key=lambda p: p.get("lastUpdate") or 0, reverse=True)
             current_id = candidates[0].get("libraryItemId")
-            if current_id:
-                current = abs_json(f"/api/items/{current_id}")
-
-    current_id = current.get("id") if current else None
 
     finished = [p for p in progress if p.get("isFinished") and p.get("finishedAt")]
     finished.sort(key=lambda p: p.get("finishedAt") or 0, reverse=True)
@@ -536,17 +547,30 @@ def load_books() -> tuple[list[dict], dict]:
         if len(selected_ids) >= TARGET_BOOKS:
             break
 
-    if current is None:
+    if current_id is None:
         # No current book: feature the newest finished book.
         if not selected_ids:
             raise SystemExit("No finished books found and no current book.")
         current_id = selected_ids.pop(0)
-        current = abs_json(f"/api/items/{current_id}")
 
-    # Always use the full item: the items-in-progress payload does not include
-    # the same author/relPath fields as /api/items/{id}.
-    if current.get("id"):
-        current = abs_json(f"/api/items/{current['id']}")
+    # Batch endpoint keeps a check to a few requests instead of 20 sequential ones.
+    ids_to_fetch = [current_id] + selected_ids[:TARGET_BOOKS - 1]
+    ids_to_fetch = list(dict.fromkeys(ids_to_fetch))
+    items_by_id: dict[str, dict] = {}
+    try:
+        batch = abs_post_json("/api/items/batch/get", {"libraryItemIds": ids_to_fetch})
+        for item in batch.get("libraryItems") or []:
+            if item.get("id"):
+                items_by_id[str(item["id"])] = item
+    except Exception as error:  # noqa: BLE001 - fall back for older ABS versions
+        print(f"Batch item fetch failed, using individual requests: {error}")
+    for item_id in ids_to_fetch:
+        if item_id not in items_by_id:
+            items_by_id[item_id] = abs_json(f"/api/items/{item_id}")
+
+    current = items_by_id.get(current_id)
+    if current is None:
+        raise SystemExit("The current book disappeared from Audiobookshelf.")
 
     overrides = load_overrides()
 
@@ -573,8 +597,9 @@ def load_books() -> tuple[list[dict], dict]:
 
     books = [make_book(current, True)]
     for item_id in selected_ids[:TARGET_BOOKS - 1]:
-        item = abs_json(f"/api/items/{item_id}")
-        books.append(make_book(item, False))
+        item = items_by_id.get(item_id)
+        if item:
+            books.append(make_book(item, False))
 
     assign_unique_directions(books[1:])
 
