@@ -1,5 +1,9 @@
 # Fire TV Bookshelf Screensaver
 
+![Bookshelf screensaver on a wall-mounted TV](docs/hero.gif)
+
+*Demo shelf uses invented books; your generated shelf uses your own library.*
+
 A small, self-hosted service that turns your most recent Audiobookshelf listens into a
 hand-painted bookshelf poster for a Fire TV screensaver.
 
