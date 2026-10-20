@@ -51,6 +51,8 @@ def write_json(path: Path, value) -> None:
 def public_token() -> str:
     token = os.environ.get("PUBLIC_TOKEN", "").strip()
     if token:
+        if not TOKEN_PATH.exists() or TOKEN_PATH.read_text(encoding="utf-8").strip() != token:
+            TOKEN_PATH.write_text(token + "\n", encoding="utf-8")
         return token
     if TOKEN_PATH.exists():
         token = TOKEN_PATH.read_text(encoding="utf-8").strip()

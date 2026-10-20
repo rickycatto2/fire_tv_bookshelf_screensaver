@@ -73,6 +73,22 @@ For the Fire TV app, use the HTTPS hostname:
 https://bookshelf.pixelwood.co/s/<PUBLIC_TOKEN>/panorama.json
 ```
 
+## Install and configure the Fire TV app
+
+The helper script installs the APK, builds the token URL from `data/public_token.txt`, and
+configures the app over ADB:
+
+```powershell
+.\scripts\install-firetv.ps1 `
+  -Serial 192.168.1.50:5555 `
+  -ApkPath .\dist\PanoramaScreensaver-1.0.0.apk
+```
+
+It also tries to set the Fire TV `screensaver_components` setting. If your Fire OS build blocks
+that, choose **Settings → Display & Sounds → Screen Saver → Panorama Screensaver** manually.
+
+The APK is also published as a GitHub release asset so it can be installed with Downloader.
+
 The token is a capability. Anyone with the full URL can fetch the poster and trigger a no-op
 refresh. Treat it like a password and do not commit it.
 

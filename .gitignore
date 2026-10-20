@@ -11,3 +11,4 @@ __pycache__/
 *.png
 openai-prompt.txt
 cloudflared.yml
+*.apk
