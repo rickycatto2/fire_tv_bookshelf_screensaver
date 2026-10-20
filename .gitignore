@@ -1,0 +1,13 @@
+﻿.env
+data/
+output/
+work/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+*.jpg
+*.jpeg
+*.png
+openai-prompt.txt
+cloudflared.yml

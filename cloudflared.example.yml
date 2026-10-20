@@ -1,0 +1,7 @@
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: bookshelf.example.com
+    service: http://bookshelf-screensaver:8787
+  - service: http_status:404

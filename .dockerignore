@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+data
+output
+work
+__pycache__
+*.pyc
+*.log
+docs
+*.jpg
+*.jpeg
+*.png
