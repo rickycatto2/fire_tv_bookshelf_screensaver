@@ -462,35 +462,47 @@ def assign_unique_directions(spines: list[dict]) -> None:
     if not isinstance(assignments, dict):
         assignments = {}
     used = set()
-    for book in spines:
-        item_id = str(book.get("library_item_id") or "")
-        haystack = f"{book['title']} {book['author']} {' '.join(book['genre'])}".casefold()
-        preferred = book.get("design_override") or assignments.get(item_id)
-        design = None
-        if preferred:
-            candidate = next((entry for entry in DESIGNS if entry["id"] == preferred), None)
-            if candidate and candidate["id"] not in used:
-                design = candidate
-        if design is None:
-            choices = []
-            for entry in DESIGNS:
-                if entry["id"] in used:
-                    continue
-                score = sum(4 for tag in entry["tags"] if tag and tag in haystack)
-                # Stable tie-breaker so the same book gets the same plan.
-                tie = hashlib.sha256(
-                    f"{book['title']}|{book['author']}|{entry['id']}".encode()
-                ).digest()
-                choices.append((score, tie, entry))
-            choices.sort(key=lambda entry: (-entry[0], entry[1]))
-            design = choices[0][2]
+
+    def apply(book: dict, design: dict) -> None:
         used.add(design["id"])
+        item_id = str(book.get("library_item_id") or "")
         if item_id:
             assignments[item_id] = design["id"]
         book["visual_direction"] = (
             f"{design['palette']} binding; {design['motif']}; "
             f"{design['type']}; {design['mood']}."
         )
+
+    # Reserve existing assignments first. A newly finished book must not steal a
+    # design from a book that is already on the shelf.
+    unresolved = []
+    for book in spines:
+        item_id = str(book.get("library_item_id") or "")
+        preferred = book.get("design_override") or assignments.get(item_id)
+        candidate = next((entry for entry in DESIGNS if entry["id"] == preferred), None)
+        if candidate and candidate["id"] not in used:
+            apply(book, candidate)
+        else:
+            unresolved.append(book)
+
+    for book in unresolved:
+        haystack = f"{book['title']} {book['author']} {' '.join(book['genre'])}".casefold()
+        choices = []
+        for entry in DESIGNS:
+            if entry["id"] in used:
+                continue
+            score = sum(4 for tag in entry["tags"] if tag and tag in haystack)
+            # Stable tie-breaker so the same book gets the same plan.
+            tie = hashlib.sha256(
+                f"{book['title']}|{book['author']}|{entry['id']}".encode()
+            ).digest()
+            choices.append((score, tie, entry))
+        choices.sort(key=lambda entry: (-entry[0], entry[1]))
+        if not choices:
+            choices = [(0, b"", entry) for entry in DESIGNS if entry["id"] not in used]
+        if not choices:
+            choices = [(0, b"", DESIGNS[0])]
+        apply(book, choices[0][2])
     save_json(ASSIGNMENTS_PATH, assignments)
 
 
