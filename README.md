@@ -96,7 +96,8 @@ The bridge only watches for the two Amazon screensaver packages; it does not rea
 Pass `-SkipBridge` if you only want the manual **Preview** button. On standard Android TV, the app
 still appears as a normal DreamService and the bridge is unnecessary.
 
-The APK is also published as a GitHub release asset so it can be installed with Downloader.
+The APK is also published as a GitHub release asset so it can be installed with Downloader:
+[PanoramaScreensaver-1.1.0.apk](https://github.com/rickycatto2/fire_tv_bookshelf_screensaver/releases/tag/v1.1.0).
 
 The token is a capability. Anyone with the full URL can fetch the poster and trigger a no-op
 refresh. Treat it like a password and do not commit it.
