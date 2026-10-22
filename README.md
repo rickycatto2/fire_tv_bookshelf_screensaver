@@ -85,11 +85,16 @@ configures the app over ADB:
 ```powershell
 .\scripts\install-firetv.ps1 `
   -Serial 192.168.1.50:5555 `
-  -ApkPath .\dist\PanoramaScreensaver-1.0.0.apk
+  -ApkPath .\dist\PanoramaScreensaver-1.1.0.apk
 ```
 
-It also tries to set the Fire TV `screensaver_components` setting. If your Fire OS build blocks
-that, choose **Settings → Display & Sounds → Screen Saver → Panorama Screensaver** manually.
+On **Fire OS 8**, Amazon's Screen Saver picker only offers **Amazon Collection**; it does not list
+third-party DreamServices. The 1.1 APK includes an optional accessibility bridge. The helper enables
+it, and when Amazon's screensaver starts, the app raises the bookshelf full-screen over it.
+
+The bridge only watches for the two Amazon screensaver packages; it does not read screen content.
+Pass `-SkipBridge` if you only want the manual **Preview** button. On standard Android TV, the app
+still appears as a normal DreamService and the bridge is unnecessary.
 
 The APK is also published as a GitHub release asset so it can be installed with Downloader.
 

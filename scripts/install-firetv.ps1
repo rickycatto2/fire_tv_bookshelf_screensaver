@@ -6,7 +6,9 @@ param(
 
     [string]$HostName = "bookshelf.pixelwood.co",
 
-    [switch]$SkipInstall
+    [switch]$SkipInstall,
+
+    [switch]$SkipBridge
 )
 
 $ErrorActionPreference = "Stop"
@@ -51,15 +53,15 @@ try {
 
 if (-not $ApkPath) {
     $candidates = @(
-        (Join-Path $repoRoot "dist\PanoramaScreensaver-1.0.0.apk"),
-        (Join-Path $repoRoot "..\PanoramaScreensaver\dist\PanoramaScreensaver-1.0.0.apk"),
-        (Join-Path $env:USERPROFILE "Downloads\PanoramaScreensaver-1.0.0.apk")
+        (Join-Path $repoRoot "dist\PanoramaScreensaver-1.1.0.apk"),
+        (Join-Path $repoRoot "..\PanoramaScreensaver\dist\PanoramaScreensaver-1.1.0.apk"),
+        (Join-Path $env:USERPROFILE "Downloads\PanoramaScreensaver-1.1.0.apk")
     )
     $ApkPath = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 }
 if (-not $SkipInstall) {
     if (-not $ApkPath -or -not (Test-Path -LiteralPath $ApkPath)) {
-        throw "APK not found. Pass -ApkPath or place it in dist\PanoramaScreensaver-1.0.0.apk."
+        throw "APK not found. Pass -ApkPath or place it in dist\PanoramaScreensaver-1.1.0.apk."
     }
     Write-Host "Installing $ApkPath ..."
     & $adb -s $Serial install -r $ApkPath | Out-Host
@@ -82,10 +84,36 @@ try {
         com.ricky.panoramascreensaver/.PanoramaDreamService | Out-Null
     Write-Host "Fire TV screensaver component set."
 } catch {
-    Write-Warning "Could not set screensaver_components automatically. Choose it manually in Settings."
+    Write-Warning "Could not set screensaver_components automatically."
+}
+
+if (-not $SkipBridge) {
+    Write-Host "Enabling the Fire TV accessibility bridge ..."
+    try {
+        & $adb -s $Serial shell settings put secure enabled_accessibility_services `
+            com.ricky.panoramascreensaver/.ScreensaverBridgeService | Out-Null
+        & $adb -s $Serial shell settings put secure accessibility_enabled 1 | Out-Null
+        Start-Sleep -Seconds 3
+        $enabled = (& $adb -s $Serial shell settings get secure enabled_accessibility_services).Trim()
+        if ($enabled -notmatch "ScreensaverBridgeService") {
+            # Fire OS sometimes applies the setting asynchronously.
+            & $adb -s $Serial shell settings put secure enabled_accessibility_services `
+                com.ricky.panoramascreensaver/.ScreensaverBridgeService | Out-Null
+            Start-Sleep -Seconds 3
+            $enabled = (& $adb -s $Serial shell settings get secure enabled_accessibility_services).Trim()
+        }
+        if ($enabled -notmatch "ScreensaverBridgeService") {
+            Write-Warning "The bridge is not enabled. Re-run, or enable 'Fire TV screensaver bridge' in Accessibility settings."
+        } else {
+            Write-Host "Bridge enabled."
+        }
+    } catch {
+        Write-Warning "Could not enable the accessibility bridge: $($_.Exception.Message)"
+    }
 }
 
 Write-Host ""
 Write-Host "Fire TV manifest: $manifestUrl"
-Write-Host "Now choose Settings -> Display & Sounds -> Screen Saver -> Panorama Screensaver."
-Write-Host "Or press Preview in the app to verify the HTTPS image first."
+Write-Host "Press Preview in the app to verify the HTTPS image first."
+Write-Host "Fire OS 8 only offers Amazon Collection in its Screen Saver picker."
+Write-Host "With the bridge enabled, the bookshelf appears automatically when Amazon's screensaver starts."
