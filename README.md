@@ -85,19 +85,19 @@ configures the app over ADB:
 ```powershell
 .\scripts\install-firetv.ps1 `
   -Serial 192.168.1.50:5555 `
-  -ApkPath .\dist\PanoramaScreensaver-1.1.0.apk
+  -ApkPath .\dist\PanoramaScreensaver-1.1.1.apk
 ```
 
 On **Fire OS 8**, Amazon's Screen Saver picker only offers **Amazon Collection**; it does not list
-third-party DreamServices. The 1.1 APK includes an optional accessibility bridge. The helper enables
+third-party DreamServices. The 1.1.1 APK includes an optional accessibility bridge. The helper enables
 it, and when Amazon's screensaver starts, the app raises the bookshelf full-screen over it.
 
-The bridge only watches for the two Amazon screensaver packages; it does not read screen content.
+The bridge only watches Amazon's ambient screensaver window; it does not read screen content.
 Pass `-SkipBridge` if you only want the manual **Preview** button. On standard Android TV, the app
 still appears as a normal DreamService and the bridge is unnecessary.
 
 The APK is also published as a GitHub release asset so it can be installed with Downloader:
-[PanoramaScreensaver-1.1.0.apk](https://github.com/rickycatto2/fire_tv_bookshelf_screensaver/releases/tag/v1.1.0).
+[PanoramaScreensaver-1.1.1.apk](https://github.com/rickycatto2/fire_tv_bookshelf_screensaver/releases/tag/v1.1.1).
 
 The token is a capability. Anyone with the full URL can fetch the poster and trigger a no-op
 refresh. Treat it like a password and do not commit it.

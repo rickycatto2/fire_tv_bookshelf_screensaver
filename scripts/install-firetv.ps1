@@ -53,15 +53,15 @@ try {
 
 if (-not $ApkPath) {
     $candidates = @(
-        (Join-Path $repoRoot "dist\PanoramaScreensaver-1.1.0.apk"),
-        (Join-Path $repoRoot "..\PanoramaScreensaver\dist\PanoramaScreensaver-1.1.0.apk"),
-        (Join-Path $env:USERPROFILE "Downloads\PanoramaScreensaver-1.1.0.apk")
+        (Join-Path $repoRoot "dist\PanoramaScreensaver-1.1.1.apk"),
+        (Join-Path $repoRoot "..\PanoramaScreensaver\dist\PanoramaScreensaver-1.1.1.apk"),
+        (Join-Path $env:USERPROFILE "Downloads\PanoramaScreensaver-1.1.1.apk")
     )
     $ApkPath = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 }
 if (-not $SkipInstall) {
     if (-not $ApkPath -or -not (Test-Path -LiteralPath $ApkPath)) {
-        throw "APK not found. Pass -ApkPath or place it in dist\PanoramaScreensaver-1.1.0.apk."
+        throw "APK not found. Pass -ApkPath or place it in dist\PanoramaScreensaver-1.1.1.apk."
     }
     Write-Host "Installing $ApkPath ..."
     & $adb -s $Serial install -r $ApkPath | Out-Host
